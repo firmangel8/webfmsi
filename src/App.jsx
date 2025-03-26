@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import PrivateRoute from "./components/layout/PrivateRoute";
 
 import Blank from "./pages/Blank";
+import Gallery from "./pages/Gallery";
 
 function App() {
   return (
@@ -70,7 +71,7 @@ function App() {
         <Route
           exact
           path="/gallery"
-          element={<PrivateRoute component={<Blank />} />}
+          element={<PrivateRoute component={<Gallery />} />}
         />
       </Routes>
     </div>
