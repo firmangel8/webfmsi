@@ -1,3 +1,4 @@
+import { CheckCircleIcon } from "@heroicons/react/16/solid";
 import {
   Col,
   Row,
@@ -5,47 +6,62 @@ import {
   Card,
   List,
   Skeleton,
-  Divider,
+  Input,
+  notification,
   FloatButton,
   Drawer,
   Form,
-  Input,
   Button,
-  Select,
-  notification,
+  Popconfirm,
 } from "antd";
+import {
+  SearchOutlined,
+  PlusCircleOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from "@ant-design/icons";
+
+import { useEffect, useState } from "react";
+import { getData, sendData, deleteData } from "../../utils/api";
+import { ellipsisGenerator } from "../../utils/ui";
+
 const { Title, Text } = Typography;
-const { Option } = Select;
-import { getData, sendData } from "../../utils/api";
-import { useState, useEffect } from "react";
-import { CustomerServiceOutlined } from "@ant-design/icons";
 
 const Gallery = () => {
-  const [api, contextHolder] = notification.useNotification();
-  const [dataSources, setDataSources] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const [isOpenDrawer, setIsOpenDrawer] = useState(false);
   const [form] = Form.useForm();
+  const [api, contextHolder] = notification.useNotification();
 
-  const openNotificationWithIcon = (type, msg) => {
-    api[type]({
-      message: "Notification Title",
-      description: msg,
-    });
-  };
+  const [dataSource, setDataSource] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [dataList, setDataList] = useState([]);
+
+  const [isDrawer, setIsDrawer] = useState(false);
+
+  const [isEdit, setIsEdit] = useState(false);
+  const [idSelected, setIdSelected] = useState(null);
 
   useEffect(() => {
     getDataGallery();
   }, []);
 
-  const getDataGallery = () => {
-    setIsLoading(true);
+  const showAlert = (status, title, description) => {
+    api[status]({
+      message: title,
+      description: description,
+    });
+  };
+
+  const getDataGallery = (isNoLoading) => {
+    if (!isNoLoading) {
+      setIsLoading(true);
+    }
+
     getData("/api/v1/natures")
       .then((resp) => {
         setIsLoading(false);
         if (resp) {
-          setDataSources(resp);
+          setDataSource(resp);
         }
       })
       .catch((err) => {
@@ -54,110 +70,202 @@ const Gallery = () => {
       });
   };
 
-  const onCloseDrawer = () => {
-    setIsOpenDrawer(false);
+  const handleSearch = (value) => {
+    setSearchText(value.toLowerCase());
   };
 
+  let dataSourceFiltered = dataSource.filter((item) => {
+    return item?.name_natures.toLowerCase().includes(searchText);
+  });
+
   const handleDrawer = () => {
-    setIsOpenDrawer(true);
+    setIsDrawer(true);
+  };
+
+  const onCloseDrawer = () => {
+    if (isEdit) {
+      form.resetFields();
+      setIsEdit(false);
+      setIdSelected(null);
+    }
+    setIsDrawer(false);
+  };
+
+  const handleDrawerEdit = (record) => {
+    setIsDrawer(true);
+    setIsEdit(true);
+    setIdSelected(record?.id);
+    form.setFieldValue("name_natures", record?.name_natures);
+    form.setFieldValue("description", record?.description);
+
+    // filled form here
   };
 
   const handleSubmit = () => {
-    // eksekusi disini
-    let nameOfNatures = form.getFieldValue("name_of_natures");
-    let descriptionOfNatures = form.getFieldValue("description_of_natures");
+    let nameNatures = form.getFieldValue("name_natures");
+    let description = form.getFieldValue("description");
 
-    let endpoint = "/api/v1/natures";
+    //mengirim data ke API
     let formData = new FormData();
-    formData.append("name_natures", nameOfNatures);
-    formData.append("description", descriptionOfNatures);
+    formData.append("name_natures", nameNatures);
+    formData.append("description", description);
 
-    sendData(endpoint, formData)
+    let url = isEdit ? `/api/v1/natures/${idSelected}` : "/api/v1/natures";
+
+    sendData(url, formData)
       .then((resp) => {
-        if (resp?.datas) {
-          setIsOpenDrawer(false);
-          openNotificationWithIcon("success", "Berhasil menambahkan data");
+        if (resp) {
+          showAlert(
+            "success",
+            "Data terkirim",
+            "Sukses mengirim data, data tersimpan",
+          );
+          form.resetFields();
           getDataGallery();
+          onCloseDrawer();
         } else {
-          openNotificationWithIcon("error", "Gagal Menambahkan data");
+          showAlert("error", "Pengiriman gagal", "Data tidak bisa disimpan");
         }
       })
       .catch((err) => {
         console.log(err);
+        showAlert("error", "Pengiriman Gagal", "Data tidak dapat dikirim!");
       });
   };
 
-  const renderDrawer = () => {
+  const drawerSection = () => {
     return (
       <Drawer
-        width={"550px"}
-        title="Form Input Natures"
+        title={"Add Data"}
         onClose={onCloseDrawer}
-        open={isOpenDrawer}
+        open={isDrawer}
+        width={"680px"}
         extra={
-          <>
-            <Button type="primary" onClick={() => handleSubmit()}>
-              Submit
-            </Button>
-          </>
+          <Button type="primary" onClick={() => handleSubmit()}>
+            Submit
+          </Button>
         }
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            label="Name of natures"
-            name="name_of_natures"
-            rules={[{ required: true, message: "Name of natures must filled" }]}
-          >
+        <Form layout="vertical" name="natures_form" form={form}>
+          <Form.Item name="name_natures" label="Name of natures" required>
             <Input placeholder="eg. Mountain" />
           </Form.Item>
-          <Form.Item
-            label="Description of natures"
-            name="description_of_natures"
-          >
-            <Input.TextArea placeholder="eg. Mountain" rows={3} />
+          <Form.Item name="description" label="Description of natures" required>
+            <Input.TextArea rows={4} placeholder="eg. Mountain" />
           </Form.Item>
         </Form>
       </Drawer>
     );
   };
 
+  const confirmDelete = (record_id) => {
+    let url = `/api/v1/natures/${record_id}`;
+    let params = new URLSearchParams();
+    params.append("id", record_id);
+    deleteData(url, params)
+      .then((resp) => {
+        if (resp?.status == 200) {
+          showAlert("success", "Data deleted", "Data berhasil terhapus");
+          getDataGallery(true);
+          form.resetFields();
+          onCloseDrawer();
+        } else {
+          showAlert("error", "Failed", "Data gagal terhapus");
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        showAlert("error", "Failed", "Data gagal terhapus");
+      });
+  };
+
   return (
     <div className="layout-content">
       {contextHolder}
-      <FloatButton
-        shape="circle"
-        type="primary"
-        icon={<CustomerServiceOutlined />}
-        onClick={() => handleDrawer()}
-      />
-      {renderDrawer()}
-
       <Row gutter={[24, 0]}>
         <Col xs={23} className="mb-24">
           <Card bordered={false} className="circlebox h-full w-full">
-            <Title>List of The Natures</Title>
-            <Text style={{ fontSize: "12pt" }}>Add content here..</Text>
-            <Divider />
-            {isLoading && dataSources?.length <= 0 ? (
-              <Skeleton active />
-            ) : (
+            <FloatButton
+              type="primary"
+              tooltip={<div>Add gallery</div>}
+              icon={<PlusCircleOutlined />}
+              onClick={() => handleDrawer()}
+            />
+
+            {drawerSection()}
+
+            <Title>Natures Gallery</Title>
+            <Text style={{ fontSize: "12pt" }}>
+              To demonstrate fetching data from the API and rendering it using
+              AntD Card component. In this page also demonstrate simple CRUD and
+              live search based on client side.
+            </Text>
+            <Input
+              prefix={<SearchOutlined />}
+              placeholder="input search text"
+              className="header-search"
+              allowClear
+              size="large"
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+            {dataSource?.length > 0 && !isLoading ? (
               <List
-                grid={{ gutter: 16, xl: 4, lg: 3, md: 2, sm: 1, xs: 1 }}
-                dataSource={dataSources}
+                grid={{
+                  gutter: 16,
+                  xs: 1,
+                  sm: 1,
+                  md: 2,
+                  lg: 3,
+                  xl: 3,
+                }}
+                dataSource={dataSourceFiltered ?? []}
                 renderItem={(item) => (
-                  <List.Item>
+                  <List.Item key={item?.id}>
                     <Card
-                      hoverable
-                      cover={<img alt="example" src={item?.url_photo} />}
+                      cover={
+                        <img
+                          src={`${item?.url_photo}`}
+                          alt="categories-image"
+                        />
+                      }
+                      actions={[
+                        <EditOutlined
+                          key={item?.id}
+                          onClick={() => handleDrawerEdit(item)}
+                        />,
+                        <SearchOutlined
+                          key={item?.id}
+                          onClick={() => handleDrawerEdit(item)}
+                        />,
+                        <Popconfirm
+                          key={item?.id}
+                          title="Delete the task"
+                          description={`Are you sure to delete ${item?.name_natures} ?`}
+                          okText="Yes"
+                          onConfirm={() => confirmDelete(item?.id)}
+                          cancelText="No"
+                        >
+                          <DeleteOutlined key={item?.id} />
+                        </Popconfirm>,
+                      ]}
                     >
                       <Card.Meta
-                        title={item?.name_natures}
-                        description={item?.description}
+                        avatar={<CheckCircleIcon />}
+                        title={<Text>{item?.name_natures}</Text>}
+                        description={
+                          <Text ellipsis={ellipsisGenerator(item?.description)}>
+                            {item?.description}
+                          </Text>
+                        }
                       />
                     </Card>
                   </List.Item>
                 )}
               />
+            ) : isLoading ? (
+              <Skeleton active />
+            ) : (
+              "Data tidak ada"
             )}
           </Card>
         </Col>

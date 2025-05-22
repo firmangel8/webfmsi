@@ -26,7 +26,8 @@ function Footer() {
             <a href="#pablo" className="font-weight-bold" target="_blank">
               WebfmSI.com
             </a>
-            for a better point of sales management.
+            for a better information systems web development using client side
+            framework.
           </div>
         </Col>
       </Row>
