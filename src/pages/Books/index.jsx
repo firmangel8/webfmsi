@@ -61,6 +61,7 @@ const Books = () => {
               private endpoints.
             </Text>
             <Divider />
+            {errMsg ?? ""}
             <Table
               dataSource={dataSources}
               columns={columns}

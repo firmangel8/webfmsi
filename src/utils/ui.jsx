@@ -327,22 +327,6 @@ export const compilationCrossrefJournalArticel = (msg) => {
   return data;
 };
 
-export const showImageGDrive = (fileID) => {
-  // https://drive.google.com/file/d/1SdbSvTB1YzVkx7EGORB3cIP2H86_jlDJ/view?usp=share_link
-  // https://drive.google.com/uc?export=view&id=1SdbSvTB1YzVkx7EGORB3cIP2H86_jlDJ
-  // https://lh3.googleusercontent.com/d/1SdbSvTB1YzVkx7EGORB3cIP2H86_jlDJ=w1000?authuser=1
-  let url = `https://drive.google.com/thumbnail?id=${fileID}&sz=w1000`;
-  return url;
-};
-
-export const showThumbnailGDrive = (fileID, size = "w100") => {
-  // https://drive.google.com/file/d/1SdbSvTB1YzVkx7EGORB3cIP2H86_jlDJ/view?usp=share_link
-  // https://drive.google.com/uc?export=view&id=1SdbSvTB1YzVkx7EGORB3cIP2H86_jlDJ
-  // how to use <img src = { showImageGDrive("1SdbSvTB1YzVkx7EGORB3cIP2H86_jlDJ") }/>
-  let url = `https://drive.google.com/thumbnail?id=${fileID}&sz=${size}`;
-  return url;
-};
-
 export const ellipsisGenerator = (description) => {
   return {
     rows: 2,

@@ -25,6 +25,11 @@ function App() {
         />
         <Route
           exact
+          path="/gallery"
+          element={<PrivateRoute component={<Gallery />} />}
+        />
+        <Route
+          exact
           path="/books"
           element={<PrivateRoute component={<Blank />} />}
         />
